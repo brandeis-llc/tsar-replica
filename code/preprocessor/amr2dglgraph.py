@@ -46,6 +46,8 @@ def processing_amr(data, amr_list):
 
     all_edge_type = {}
     for sentences in tqdm(data):
+        if cur_idx + len(sentences) > len(amr_list):
+            break
         amrs = amr_list[cur_idx:cur_idx+len(sentences)]
         cur_idx += len(sentences)
         graphs = []
@@ -60,7 +62,7 @@ def processing_amr(data, amr_list):
             for line in amr_split_list:
                 if line.startswith('# ::node'):
                     node_split = line.split('\t')
-                    amrnodeid = int(node_split[1])
+                    amrnodeid = node_split[1]
                     if len(node_split) != 4:
                         # check if the alignment text spans exist
                         continue
@@ -72,7 +74,7 @@ def processing_amr(data, amr_list):
                         amrnodeid2span[amrnodeid] = (start, end)
                 elif line.startswith('# ::root'):
                     line = line.split('\t')
-                    root_amrnodeid = int(line[1])
+                    root_amrnodeid = line[1]
             
             if root_amrnodeid == -1:
                 print('=======>  No AMR graph!!!!!')
@@ -102,8 +104,8 @@ def processing_amr(data, amr_list):
                 if line.startswith('# ::edge'):
                     edge_split = line.split('\t')
                     amr_edge_type = edge_split[2]
-                    edge_start = int(edge_split[4])
-                    edge_end = int(edge_split[5])
+                    edge_start = edge_split[4]
+                    edge_end = edge_split[5]
                     # check if the start and end nodes exist
                     if (edge_start in amrnodeid2span) and (edge_end in amrnodeid2span): 
                         # check if the edge type is "ARGx-of", if so, reverse the direction of the edge
@@ -134,6 +136,23 @@ def processing_amr(data, amr_list):
     print(all_edge_type)
     return graphs_list
 
+def read_amr_txt(amr_txt_fname):
+    amr = []
+    with open(amr_txt_fname) as f:
+        cur_amr = ""
+        lf_seen = 0
+        for line in f:
+            if line == '\n':
+                lf_seen += 1
+            if lf_seen > 1:
+                amr.append(cur_amr.strip())
+                cur_amr = ""
+                lf_seen = 0
+            else:
+                cur_amr += line
+    return amr
+
+
 def amr2dglgraph(data_path, amr_path, graph_path):
     data = []
     with open(data_path) as f:
@@ -141,16 +160,18 @@ def amr2dglgraph(data_path, amr_path, graph_path):
             d = json.loads(line)
             sentences = d['sentences']
             data.append(sentences)
-    amr = torch.load(amr_path)
+    if amr_path.endswith('.pkl'):
+        amr = torch.load(amr_path)
+    else:
+        amr = read_amr_txt(amr_path)
     graphs_list = processing_amr(data, amr)
     torch.save(graphs_list, graph_path)
 
 
 if __name__ == "__main__":
-    amr2dglgraph("../data/rams/train.jsonlines", "amr-rams-train.pkl", "../data/rams/dglgraph-rams-train.pkl")
-    amr2dglgraph("../data/rams/dev.jsonlines", "amr-rams-dev.pkl", "../data/rams/dglgraph-rams-dev.pkl")
-    amr2dglgraph("../data/rams/test.jsonlines", "amr-rams-test.pkl", "../data/rams/dglgraph-rams-test.pkl")
-
-    amr2dglgraph("../data/wikievents/transfer-train.jsonl", "amr-wikievent-train.pkl", "../data/wikievent/dglgraph-wikievent-train.pkl")
-    amr2dglgraph("../data/wikievents/transfer-dev.jsonl", "amr-wikievent-dev.pkl", "../data/wikievent/dglgraph-wikievent-dev.pkl")
-    amr2dglgraph("../data/wikievents/transfer-test.jsonl", "amr-wikievent-test.pkl", "../data/wikievent/dglgraph-wikievent-test.pkl")
+    # read_amr_txt("/Users/krim/Library/CloudStorage/Dropbox/Projects/dense-paraphrase/glamr-tsar/tsar/data/rams/amr-rams-train.txt")
+    for split in 'train dev test'.split():
+        amr2dglgraph(
+            f"data/rams/{split}.jsonlines",
+            f"data/rams/{split}.amr.txt",
+            f"data/rams/dglgraph-rams-{split}.pkl")
