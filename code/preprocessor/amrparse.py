@@ -1,7 +1,6 @@
 import json
 import sys
 from pathlib import Path
-import logging
 
 import torch
 from transition_amr_parser.parse import AMRParser
@@ -13,15 +12,19 @@ def parse_rams(parser, rams_jsonl):
     out_pkl_fname = rams_jsonl.with_suffix('.pkl')
     with open(rams_jsonl) as in_f, open(out_txt_fname, 'w') as out_f:
         for line in in_f:
-            for tokens in json.loads(line)['sentences']:
+            doc = json.loads(line)
+            did = doc['doc_key']
+            for i, tokens in enumerate(doc['sentences']):
+                print('\n\n', ' '.join(tokens))
                 try:
-                    penman, _ = parser.parse_sentence(tokens)
+                    penman, _ = parser.parse_sentence(tokens, jamr=True)
                 # for sentences that parser can't handle and returns rootless penman
                 # e.g., # ::tok ADVERTISEMENT
                 except KeyError:
                     penman = f'# ::tok {" ".join(tokens)}\n()'
-                data.append(penman)
-                out_f.write(penman+'\n\n')
+                out = f"snt_id::{did}::{i}\n{penman}\n\n"
+                data.append(out)
+                out_f.write(out)
                 out_f.flush()
     torch.save(data, out_pkl_fname)
 
