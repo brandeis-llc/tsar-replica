@@ -1,7 +1,9 @@
-import torch
-import dgl
 import json
+
+import dgl
+import torch
 from tqdm import tqdm
+
 
 def get_amr_edge_idx(edge_type_str):
     if edge_type_str in ['location', 'localtion-of', 'destination', 'path']:
@@ -30,6 +32,7 @@ def get_amr_edge_idx(edge_type_str):
         return 11
     else:
         return 12
+
 
 def processing_amr(data, amr_list):
     '''
@@ -170,9 +173,8 @@ def amr2dglgraph(data_path, amr_path, graph_path):
 
 
 if __name__ == "__main__":
-    # read_amr_txt("/Users/krim/Library/CloudStorage/Dropbox/Projects/dense-paraphrase/glamr-tsar/tsar/data/rams/amr-rams-train.txt")
     for split in 'train dev test'.split():
         amr2dglgraph(
-            f"data/rams/{split}.jsonlines",
-            f"data/rams/{split}.amr.txt",
-            f"data/rams/dglgraph-rams-{split}.pkl")
+            f"../../data/rams/{split}.jsonlines",
+            f"../../data/rams/{split}.amr.txt",
+            f"../../data/rams/dglgraph-rams-{split}.pkl")
