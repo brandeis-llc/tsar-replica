@@ -136,20 +136,20 @@ def processing_amr(data, amr_list):
     print(all_edge_type)
     return graphs_list
 
+
 def read_amr_txt(amr_txt_fname):
     amr = []
     with open(amr_txt_fname) as f:
         cur_amr = ""
-        lf_seen = 0
         for line in f:
-            if line == '\n':
-                lf_seen += 1
-            if lf_seen > 1:
-                amr.append(cur_amr.strip())
-                cur_amr = ""
-                lf_seen = 0
-            else:
+            if line.startswith('snt_id'):
+                if cur_amr:
+                    amr.append(cur_amr.strip())
+                    cur_amr = ""
+            if line:
                 cur_amr += line
+        if cur_amr:
+            amr.append(cur_amr.strip())
     return amr
 
 
@@ -164,6 +164,7 @@ def amr2dglgraph(data_path, amr_path, graph_path):
         amr = torch.load(amr_path)
     else:
         amr = read_amr_txt(amr_path)
+    print(f'processing {data_path}, expeting {len(data) * 5} sentences from the data file, found {len(amr)} AMR graphs in amr file')
     graphs_list = processing_amr(data, amr)
     torch.save(graphs_list, graph_path)
 
