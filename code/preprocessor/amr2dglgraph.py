@@ -42,17 +42,29 @@ def processing_amr(data, amr_list):
     '''
 
     graphs_list = []
-    cur_idx = 0
     initial_graph = {}
-    for i in range(13):
+    for i in range(get_amr_edge_idx('NOT-AMR-LABEL')+1):
         initial_graph[('node',str(i),'node')] = ([], [])
+    amr_dict = {}
+    for amr in amr_list:
+        raw_sent = amr.splitlines()[1][8:]
+        if raw_sent in amr_dict and \
+            amr.splitlines()[2:] != amr_dict[raw_sent].splitlines()[2:]:
+            print('diff amrs with duplicate text')
+        else:
+            amr_dict[raw_sent] = amr
+    print(len(amr_dict), len(amr_list))
 
     all_edge_type = {}
+    amrs = []
     for sentences in tqdm(data):
-        if cur_idx + len(sentences) > len(amr_list):
-            break
-        amrs = amr_list[cur_idx:cur_idx+len(sentences)]
-        cur_idx += len(sentences)
+        # suppose there are less AMRs than sentences
+        # because of for example parser failure. 
+        for sentence in sentences:
+            try:
+                amrs.append(amr_dict[' '.join(sentence)])
+            except KeyError:
+                print('NO MATCH, skipping ', ' '.join(sentence))
         graphs = []
         for sent, amr in zip(sentences, amrs):
             graph = dgl.heterograph(initial_graph)
