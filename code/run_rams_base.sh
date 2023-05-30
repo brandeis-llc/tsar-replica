@@ -1,5 +1,12 @@
 #!/bin/bash
 
+if [ $# -lt 1 ]; then 
+    echo "USAGE: $0 <DATA_DIR>"
+    echo "	DATA_DIR should include jsonlines files and dgl files."
+fi
+set -x 
+
+DATA_DIR=$1
 OUTPUT=rams-base
 GPU=0
 BSZ=4
@@ -17,13 +24,13 @@ EVENT_EMBEDDING_SIZE=200
 EPOCH=50
 MAX_LEN=512
 SEED=12
-TRAIN_FILE=../data/rams/train.jsonlines
-DEV_FILE=../data/rams/dev.jsonlines
-TEST_FILE=../data/rams/test.jsonlines
-META_FILE=../data/rams/meta.json
-TRAIN_DGLGRAPH=../data/rams/dglgraph-rams-train.pkl
-DEV_DGLGRAPH=../data/rams/dglgraph-rams-dev.pkl
-TEST_DGLGRAPH=../data/rams/dglgraph-rams-test.pkl
+TRAIN_FILE=${DATA_DIR}/train.jsonlines
+DEV_FILE=${DATA_DIR}/dev.jsonlines
+TEST_FILE=${DATA_DIR}/test.jsonlines
+META_FILE=${DATA_DIR}/meta.json
+TRAIN_DGLGRAPH=${DATA_DIR}/dglgraph-rams-train.pkl
+DEV_DGLGRAPH=${DATA_DIR}/dglgraph-rams-dev.pkl
+TEST_DGLGRAPH=${DATA_DIR}/dglgraph-rams-test.pkl
 
 # main
 CUDA_VISIBLE_DEVICES=${GPU} python run.py \
@@ -46,6 +53,7 @@ CUDA_VISIBLE_DEVICES=${GPU} python run.py \
 --load_best_model_at_end \
 --metric_for_best_model f1 \
 --greater_is_better True \
+--save_strategy epoch \
 --evaluation_strategy epoch \
 --eval_accumulation_steps 100 \
 --logging_strategy epoch \
