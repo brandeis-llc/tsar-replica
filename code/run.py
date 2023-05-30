@@ -206,7 +206,7 @@ def main():
     # Set seed before initializing model.
     set_seed(training_args.seed)
 
-    datasets = load_dataset("text.py", data_files={'train': data_args.train_file,
+    datasets = load_dataset("text", data_files={'train': data_args.train_file,
                                                 'validation': data_args.validation_file,
                                                 'test': data_args.test_file})
     # ======== construct meta schema ===========
