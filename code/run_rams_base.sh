@@ -33,7 +33,7 @@ DEV_DGLGRAPH=${DATA_DIR}/dglgraph-rams-dev.pkl
 TEST_DGLGRAPH=${DATA_DIR}/dglgraph-rams-test.pkl
 
 # main
-CUDA_VISIBLE_DEVICES=${GPU} python run.py \
+CUDA_VISIBLE_DEVICES=${GPU} python /content/drive/MyDrive/code/run.py \
 --task_name rams \
 --do_train \
 --train_file ${TRAIN_FILE} \
