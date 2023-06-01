@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 import numpy as np
-from datasets import load_dataset, load_metric
+from datasets import load_dataset, load_metric, Dataset
 
 
 import transformers
@@ -51,7 +51,14 @@ from tqdm import tqdm
 from model import MyBertmodel, MyRobertamodel
 from trainer import Mytrainer
 
+import pandas as pd
+
 logger = logging.getLogger(__name__)
+
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+else:
+    device = torch.device("cpu")
 
 
 @dataclass
@@ -150,6 +157,7 @@ class ModelArguments:
     event_embedding_size: int = field(
         default=200
     )
+
 
 def main():
     # See all possible arguments in src/transformers/training_args.py
@@ -441,13 +449,16 @@ def main():
                 graph_span = g.ndata['span'] # word-level span for every sentence itself
                 for i in range(graph_span.size(0)):
                     # may overflow
-                    graph_subwords_b = wordidx2subwordidx[graph_span[i][0]+bias_L][0]
-                    graph_subwords_e = wordidx2subwordidx[graph_span[i][1]+bias_L][1]
-                    if graph_subwords_b >= data_args.max_len or graph_subwords_e >= data_args.max_len:
-                        graph_subwords_b = 0
-                        graph_subwords_e = data_args.max_len - 1
-                    graph_span[i][0] = graph_subwords_b
-                    graph_span[i][1] = graph_subwords_e
+                    # Index Out of Bounds Error always occurs here
+                    # fix for now, looking into why this happens
+                    if graph_span[i][0]+bias_L < len(wordidx2subwordidx):
+                        graph_subwords_b = wordidx2subwordidx[graph_span[i][0]+bias_L][0]
+                        graph_subwords_e = wordidx2subwordidx[graph_span[i][1]+bias_L][1]
+                        if graph_subwords_b >= data_args.max_len or graph_subwords_e >= data_args.max_len:
+                            graph_subwords_b = 0
+                            graph_subwords_e = data_args.max_len - 1
+                        graph_span[i][0] = graph_subwords_b
+                        graph_span[i][1] = graph_subwords_e
                 dglgraph[gs_idx][graph_idx].ndata['span'] = graph_span
                 bias_L += snt2span[graph_idx][1] - snt2span[graph_idx][0] + 1
         return dglgraph
@@ -455,9 +466,11 @@ def main():
     train_dglgraph = graph_wordspan2subwordspan(train_dglgraph, train_dataset)
     dev_dglgraph = graph_wordspan2subwordspan(dev_dglgraph, eval_dataset)
     test_dglgraph = graph_wordspan2subwordspan(test_dglgraph, test_dataset)
-    train_dataset.remove_columns_(['snt2span', 'wordidx2subwordidx'])
-    eval_dataset.remove_columns_(['snt2span', 'wordidx2subwordidx'])
-    test_dataset.remove_columns_(['snt2span', 'wordidx2subwordidx'])
+
+    columns_to_drop = ['snt2span', 'wordidx2subwordidx']
+    train_dataset = Dataset.from_pandas(pd.DataFrame(train_dataset).drop(columns_to_drop, axis=1))
+    eval_dataset = Dataset.from_pandas(pd.DataFrame(eval_dataset).drop(columns_to_drop, axis=1))
+    test_dataset = Dataset.from_pandas(pd.DataFrame(test_dataset).drop(columns_to_drop, axis=1))
 
     # Log a few random samples from the training set:
     if training_args.do_train:

@@ -171,3 +171,6 @@ gdrive_shared*/
 # ctag generated file
 tags
 .tags
+
+# runtime files
+tsar-r*/
