@@ -9,7 +9,7 @@ from transition_amr_parser.parse import AMRParser
 def parse_rams(parser, rams_jsonl):
     data = []
     out_txt_fname = rams_jsonl.with_suffix('.amr.txt')
-    out_pkl_fname = rams_jsonl.with_suffix('.pkl')
+    out_pkl_fname = rams_jsonl.with_suffix('.amr.pkl')
     with open(rams_jsonl) as in_f, open(out_txt_fname, 'w') as out_f:
         for line in in_f:
             doc = json.loads(line)
