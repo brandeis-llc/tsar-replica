@@ -481,7 +481,7 @@ def main():
         preds = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions  # bsz * span_num * labelsize
         preds = np.argmax(preds, axis=-1)  # bsz * span_num
         spans = p.predictions[1] if isinstance(p.predictions, tuple) else None  # bsz * span_num * 2
-        labels = p.label_ids   # bsz * span_num
+        labels = p.label_ids[0]   # bsz * span_num
 
         tp = 0
         fp = 0
@@ -725,7 +725,7 @@ def main():
         preds = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
         preds = np.argmax(preds, axis=-1)
         spans = p.predictions[1] if isinstance(p.predictions, tuple) else None
-        labels = p.label_ids
+        labels = p.label_ids[0]
         output_validation_file = os.path.join(training_args.output_dir, "validation_predictions_span.jsonlines")
         if trainer.is_world_process_zero():
             result = extract_word_level_result(preds=preds, labels=labels, spans=spans, dataset=eval_dataset)
@@ -738,7 +738,7 @@ def main():
         preds = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
         preds = np.argmax(preds, axis=-1)
         spans = p.predictions[1] if isinstance(p.predictions, tuple) else None
-        labels = p.label_ids
+        labels = p.label_ids[0]
         output_test_file = os.path.join(training_args.output_dir, "test_predictions_span.jsonlines")
         if trainer.is_world_process_zero():
             result = extract_word_level_result(preds=preds, labels=labels, spans=spans, dataset=test_dataset)

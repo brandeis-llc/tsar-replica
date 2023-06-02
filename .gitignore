@@ -174,3 +174,9 @@ tags
 
 # runtime files
 tsar-r*/
+
+*.pt
+
+checkpoint*/
+
+pytorch_model.bin

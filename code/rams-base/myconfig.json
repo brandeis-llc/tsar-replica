@@ -1,0 +1,19 @@
+{
+    "model_name_or_path": "bert-base-uncased",
+    "config_name": null,
+    "tokenizer_name": null,
+    "cache_dir": null,
+    "use_fast_tokenizer": true,
+    "model_revision": "main",
+    "use_auth_token": false,
+    "pos_loss_weight": 10.0,
+    "span_len_embedding_range": 50,
+    "span_len_embedding_hidden_size": 20,
+    "not_bert_learning_rate": 0.0001,
+    "gcn_layers": 4,
+    "train_dglgraph_path": "../tsar-rams//dglgraph-rams-train.pkl",
+    "dev_dglgraph_path": "../tsar-rams//dglgraph-rams-dev.pkl",
+    "test_dglgraph_path": "../tsar-rams//dglgraph-rams-test.pkl",
+    "lambda_boundary": 0.05,
+    "event_embedding_size": 200
+}
