@@ -158,12 +158,10 @@ class ModelArguments:
         default=200
     )
 
-
 def main():
     # See all possible arguments in src/transformers/training_args.py
     # or by passing the --help flag to this script.
     # We now keep distinct sets of args, for a cleaner separation of concerns.
-
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
         # If we pass only one argument to the script and it's the path to a json file,
@@ -448,9 +446,7 @@ def main():
             for graph_idx, g in enumerate(gs):
                 graph_span = g.ndata['span'] # word-level span for every sentence itself
                 for i in range(graph_span.size(0)):
-                    # may overflow
-                    # Index Out of Bounds Error always occurs here
-                    # fix for now, looking into why this happens
+                    # may overflow - Index Out of Bounds Error always occurs here
                     if graph_span[i][0]+bias_L < len(wordidx2subwordidx):
                         graph_subwords_b = wordidx2subwordidx[graph_span[i][0]+bias_L][0]
                         graph_subwords_e = wordidx2subwordidx[graph_span[i][1]+bias_L][1]
@@ -638,7 +634,8 @@ def main():
         compute_metrics=compute_metrics,
         tokenizer=tokenizer,
         data_collator=collator_fn,
-        not_bert_learning_rate=model_args.not_bert_learning_rate
+        not_bert_learning_rate=model_args.not_bert_learning_rate,
+        # gpu_id=rank
     )
 
     # Training

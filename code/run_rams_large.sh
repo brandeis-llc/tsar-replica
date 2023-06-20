@@ -54,6 +54,7 @@ CUDA_VISIBLE_DEVICES=${GPU} python run.py \
 --metric_for_best_model f1 \
 --greater_is_better True \
 --evaluation_strategy epoch \
+--save_strategy epoch \
 --eval_accumulation_steps 100 \
 --logging_strategy epoch \
 --warmup_ratio ${WARMUP_RATIO} \

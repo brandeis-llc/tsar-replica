@@ -1,37 +1,83 @@
-import json
-
-import dgl
 import torch
+import dgl
+import json
 from tqdm import tqdm
 
+PB_VN_MAPPINGS = json.load(open("../code/preprocessor/pb-vn2.json"))
+PREDICATE = ""
 
 def get_amr_edge_idx(edge_type_str):
-    if edge_type_str in ['location', 'localtion-of', 'destination', 'path']:
-        return 0
-    elif edge_type_str in ['year', 'time', 'duration', 'decade', 'weekday']:
-        return 1
-    elif edge_type_str in ['instrument', 'manner', 'poss', 'topic', 'medium', 'duration']:
-        return 2
-    elif edge_type_str in ['mod']:
-        return 3
-    elif edge_type_str.startswith('prep-'):
-        return 4
-    elif edge_type_str.startswith('op') and edge_type_str[-1].isdigit():
-        return 5
-    elif edge_type_str.startswith('snt'):
-        return 6
-    elif edge_type_str == 'ARG0':
-        return 7
-    elif edge_type_str == 'ARG1':
-        return 8
-    elif edge_type_str == 'ARG2':
+    # remove ?
+    edge_type_str = edge_type_str.replace("?", "")
+    if edge_type_str.startswith("ARG"):
         return 9
+    # if the edge is in event-structure (came from VN)
+    if (edge_type_str.upper() == edge_type_str) and (edge_type_str != "E") and (edge_type_str != ""):
+        # if the predicate is not in verb net, return the default edge
+        if (pred := PREDICATE.replace("-", ".")) not in PB_VN_MAPPINGS:
+            return 9
+
+        pb_vns = list(PB_VN_MAPPINGS[pred].values())
+
+        # some have no arguments
+        pb_vns = [p for p in pb_vns if p]
+
+
+        if len(pb_vns) == 0:
+            return 9
+        else:
+            val_lists = [list(p.values()) for p in pb_vns]
+
+            to_del = []
+            for idx, vals in enumerate(val_lists):
+                if edge_type_str.lower() not in vals:
+                    to_del.append(idx)
+
+            to_del = to_del[::-1]
+            for idx in to_del:
+                del pb_vns[idx]
+
+            # slightly less simple case where the current edge node disambiguates the argument structure
+            if len(pb_vns) == 1:
+                pb_vn = pb_vns[0]
+            # did not have a corresponding argument, return default edge
+            elif len(pb_vns) == 0:
+                return 9
+            else:
+                pb_vn = pb_vns[0]
+
+            # options:
+            # 1) give up and just go with the first one
+            # 2) check if previous nodes disambiguated it (dynamic programming)
+            # 1 is almost certainly the best way
+            # 2 is probably not necessary because most are disambiguated already
+
+        vn_pb = {v: k for k, v in pb_vn.items()}
+
+        edge_type_str = vn_pb[edge_type_str.lower()]
+
+    if edge_type_str.startswith("subevent"):
+        return 0
+    elif edge_type_str.startswith("event-structure"):
+        return 1
+    # all other events
+    elif edge_type_str.startswith("e") and edge_type_str[-1].isdigit():
+        return 2
+    # stative events that do not change
+    elif edge_type_str == "E":
+        return 3
+    elif edge_type_str == 'ARG0':
+        return 4
+    elif edge_type_str == 'ARG1':
+        return 5
+    elif edge_type_str == 'ARG2':
+        return 6
     elif edge_type_str == 'ARG3':
-        return 10
+        return 7
     elif edge_type_str == 'ARG4':
-        return 11
+        return 8
     else:
-        return 12
+        return 9
 
 
 def processing_amr(data, amr_list):
@@ -41,30 +87,17 @@ def processing_amr(data, amr_list):
     ndata['span']放的是对应的word-level的span信息
     '''
 
+
     graphs_list = []
+    cur_idx = 0
     initial_graph = {}
-    for i in range(get_amr_edge_idx('NOT-AMR-LABEL')+1):
-        initial_graph[('node',str(i),'node')] = ([], [])
-    amr_dict = {}
-    for amr in amr_list:
-        raw_sent = amr.splitlines()[1][8:]
-        if raw_sent in amr_dict and \
-            amr.splitlines()[2:] != amr_dict[raw_sent].splitlines()[2:]:
-            print('diff amrs with duplicate text')
-        else:
-            amr_dict[raw_sent] = amr
-    print(len(amr_dict), len(amr_list))
+    for i in range(10):
+        initial_graph[('node', str(i), 'node')] = ([], [])
 
     all_edge_type = {}
-    amrs = []
     for sentences in tqdm(data):
-        # suppose there are less AMRs than sentences
-        # because of for example parser failure. 
-        for sentence in sentences:
-            try:
-                amrs.append(amr_dict[' '.join(sentence)])
-            except KeyError:
-                print('NO MATCH, skipping ', ' '.join(sentence))
+        amrs = amr_list[cur_idx:cur_idx + len(sentences)]
+        cur_idx += len(sentences)
         graphs = []
         for sent, amr in zip(sentences, amrs):
             graph = dgl.heterograph(initial_graph)
@@ -85,19 +118,19 @@ def processing_amr(data, amr_list):
                         align_span = node_split[3].split('-')
                         if not align_span[0].isdigit() or not align_span[1].isdigit():
                             continue
-                        start, end = int(align_span[0]), int(align_span[1])-1
+                        start, end = int(align_span[0]), int(align_span[1]) - 1
                         amrnodeid2span[amrnodeid] = (start, end)
                 elif line.startswith('# ::root'):
                     line = line.split('\t')
                     root_amrnodeid = line[1]
-            
+
             if root_amrnodeid == -1:
                 print('=======>  No AMR graph!!!!!')
                 graph.add_nodes(num=1)
                 graph.ndata['span'] = torch.zeros(1, 2, dtype=torch.long)
                 graphs.append(graph)
                 continue
-                
+
             # root must be the first node
             # one exception is that root is not in amrnodeid2span
             if root_amrnodeid in amrnodeid2span:
@@ -128,6 +161,9 @@ def processing_amr(data, amr_list):
                             edge_start, edge_end = edge_end, edge_start
                             amr_edge_type = amr_edge_type[0:4]
                         # deal with this edge here
+                        if amr_edge_type == "event-structure":
+                            global PREDICATE
+                            PREDICATE = edge_split[1]
                         edge_type = str(get_amr_edge_idx(amr_edge_type))
                         if amr_edge_type not in all_edge_type:
                             all_edge_type[amr_edge_type] = 0
@@ -175,18 +211,12 @@ def amr2dglgraph(data_path, amr_path, graph_path):
             d = json.loads(line)
             sentences = d['sentences']
             data.append(sentences)
-    if amr_path.endswith('.pkl'):
-        amr = torch.load(amr_path)
-    else:
-        amr = read_amr_txt(amr_path)
-    print(f'processing {data_path}, expeting {len(data) * 5} sentences from the data file, found {len(amr)} AMR graphs in amr file')
+    amr = torch.load(amr_path)
     graphs_list = processing_amr(data, amr)
     torch.save(graphs_list, graph_path)
 
 
 if __name__ == "__main__":
-    for split in 'train dev test'.split():
-        amr2dglgraph(
-            f"../../data/rams/{split}.jsonlines",
-            f"../../data/rams/{split}.amr.txt",
-            f"../../data/rams/dglgraph-rams-{split}.pkl")
+    amr2dglgraph("train.jsonlines", "amr-rams-train.pkl", "dglgraph-rams-train.pkl")
+    amr2dglgraph("dev.jsonlines", "amr-rams-dev.pkl", "dglgraph-rams-dev.pkl")
+    amr2dglgraph("test.jsonlines", "amr-rams-test.pkl", "dglgraph-rams-test.pkl")

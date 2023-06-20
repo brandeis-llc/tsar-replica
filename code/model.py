@@ -169,7 +169,7 @@ class MyBertmodel(BertPreTrainedModel):
 
         # GRAPH
         self.gcn_layers = gcn_layers
-        self.rel_name_lists = [str(i) for i in range(13)]
+        self.rel_name_lists = [str(i) for i in range(13)] # BEHOLD!!!!
         self.GCN_layers = nn.ModuleList([RelGraphConvLayer(config.hidden_size, config.hidden_size, self.rel_name_lists,
                                 num_bases=len(self.rel_name_lists), activation=activation_func, self_loop=True, dropout=config.hidden_dropout_prob * 3)
                                 for i in range(self.gcn_layers)])

@@ -17,6 +17,10 @@ if is_sagemaker_mp_enabled():
 
 logger = logging.get_logger(__name__)
 
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+else:
+    device = torch.device("cpu")
 
 class Mytrainer(Trainer):
     def __init__(self, **kwargs):
@@ -86,7 +90,7 @@ class Mytrainer(Trainer):
         model.eval()
 
         if is_torch_tpu_available():
-            dataloader = pl.ParallelLoader(dataloader, [self.args.device]).per_device_loader(self.args.device)
+            dataloader = torch.nn.parallel.ParallelLoader(dataloader, [self.args.device]).per_device_loader(self.args.device)
 
         if self.args.past_index >= 0:
             self._past = None
