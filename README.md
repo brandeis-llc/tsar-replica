@@ -22,6 +22,9 @@ The original paper used 2020 version of IBM parser ([stack-transformat](https://
 - `dgl-cu111`==1.1.0+cu113
 - `tqdm`==4.65.0
 - `spacy`==3.2.4
+- (`accelerate`==0.19.0)
+  - Multi-CPU/GPU/TPU training
+> Dependency conflicts may arise when running the full pipeline in one conda/venv environment. If this occurs, we recommend running the training (requiring all packages except spacy) and evaluation (requiring spacy) in separate environments. 
 
 ### Preprocessing
 
@@ -46,7 +49,8 @@ As mentioned above, the original parser wasn't easy to install, so I used the la
 
 > We also directly provide the data (used in the original paper) [here](https://drive.google.com/drive/folders/1GBmvZJJP6f0jUmFaAuvk_q7Nbw_lElH0?usp=sharing).
 > In this way, you can just skip the AMR and DGL graph preprocessing steps.
-> If you want to run this model with GL events or remake any of the DGL graphs based on different edge clusters, you will need to run the whole preprocessing pipeline starting from the AMR .txt or .pkl files.
+> If you want to run this model with GL events or remake any of the DGL graphs based on different edge clusters, you will need to run the whole preprocessing pipeline starting from the AMR `.txt` or `.pkl` files.
+> If you create or change the edge clusters, be sure to make a corresponding change in lines 172 and 497 of `model.py` for the base and the large model. (13 should be replaced with the number of unique edge clusters you are using).
  
 The data in the link is supposedly saved with torch 1.9 + dgl 0.6, which doesn't load with torch 1.13 + dgl 1.1.0. So I have to [slight edit](https://github.com/keighrim/tsar-replica/commit/59619d3aab26ddf3516e96cd1af9d5913196536b) `amr2dgl` script to load newly generate `.amr.txt` files. 
 
@@ -59,8 +63,15 @@ The data in the link is supposedly saved with torch 1.9 + dgl 0.6, which doesn't
 > bash run_rams_large.sh <data-directory>
 > bash run_wikievents_base.sh <data-directory>
 > bash run_wikievents_large.sh <data-directory>
-```
+> ```
+#### Multi-GPU Training
 
+> If you want to train the model on more than one device, run the following script and follow the prompts according to your setup (# of accumulation steps) is set in the bash scripts to run the training.
+> ```python
+> accelerate config
+> ```
+> Then, run the training scripts.
+
+### Issues 
 Running `run_rams_base.sh` originally hit a out-of-index error at where the original authors acknowledge a possible problem. 
-
 https://github.com/RunxinXu/TSAR/blob/9806edfb5a7f90b9ae85ff06f435c20e4222be59/code/run.py#L443-L444
