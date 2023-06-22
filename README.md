@@ -4,8 +4,7 @@ README to keep notes about attempts to run TSAR code without too much of changin
 
 ## Dependencies
 
-Everything is done with python 3.8
-(more recent python doesn't have prebuilt packages (e.g. torch 1.9)).
+Everything is done with python 3.10
 
 ### For AMR parsing 
 The original paper used 2020 version of IBM parser ([stack-transformat](https://github.com/IBM/transition-amr-parser/tree/stack-transformer)), however running that version on _modern_ CUDA versions wasn't so easy. So I just decided to run the latest version of the IBM parser (in the `main` branch).
@@ -14,23 +13,15 @@ The original paper used 2020 version of IBM parser ([stack-transformat](https://
 - `torch-scatter`
 
 ### For preprocessing and training
-- `pytorch`==1.9.0 
+- `pytorch`==1.11.0 
   - torch 1.9 prebuilt packages do not support recent cuda versions
   - building torch from the source code is too much hassle 
-  - ended up running 1.9 with CUDA 11.8
-- `transformers`==4.8.*
-- `datasets`==1.8.*
-- `dgl-cu111`==0.6.1
-  - cuda 11.1 is very old no longer supported
-  - ended up with running `dgl` == cu118 + 1.1.0
-- `tqdm`==4.49.0
+  - ended up running 1.11 with CUDA 11.3
+- `transformers`==4.8.1
+- `datasets`==2.13.0
+- `dgl-cu111`==1.1.0+cu113
+- `tqdm`==4.65.0
 - `spacy`==3.2.4
-
-For the usage of spacy, the following command could be helpful.
-
-```bash
->> pip install https://github.com/explosion/spacy-models/releases/download en_core_web_sm-3.2.0/en_core_web_sm-3.2.0.tar.gz
-```
 
 ### Preprocessing
 
@@ -53,8 +44,9 @@ As mentioned above, the original parser wasn't easy to install, so I used the la
 
 #### DGL conversion 
 
-> We also directly provide the data [here](https://drive.google.com/drive/folders/1GBmvZJJP6f0jUmFaAuvk_q7Nbw_lElH0?usp=sharing).
+> We also directly provide the data (used in the original paper) [here](https://drive.google.com/drive/folders/1GBmvZJJP6f0jUmFaAuvk_q7Nbw_lElH0?usp=sharing).
 > In this way, you can just skip the AMR and DGL graph preprocessing steps.
+> If you want to run this model with GL events or remake any of the DGL graphs based on different edge clusters, you will need to run the whole preprocessing pipeline starting from the AMR .txt or .pkl files.
  
 The data in the link is supposedly saved with torch 1.9 + dgl 0.6, which doesn't load with torch 1.13 + dgl 1.1.0. So I have to [slight edit](https://github.com/keighrim/tsar-replica/commit/59619d3aab26ddf3516e96cd1af9d5913196536b) `amr2dgl` script to load newly generate `.amr.txt` files. 
 
@@ -63,13 +55,12 @@ The data in the link is supposedly saved with torch 1.9 + dgl 0.6, which doesn't
 > The training scripts are provided.
 > 
 > ```bash
-> bash run_rams_base.sh
-> bash run_rams_large.sh
-> bash run_wikievents_base.sh
-> bash run_wikievents_large.sh
+> bash run_rams_base.sh <data-directory>
+> bash run_rams_large.sh <data-directory>
+> bash run_wikievents_base.sh <data-directory>
+> bash run_wikievents_large.sh <data-directory>
 ```
 
-
-Running `run_rams_base.sh` hits a out-of-index error at where the original authors acknowledge a possible problem. 
+Running `run_rams_base.sh` originally hit a out-of-index error at where the original authors acknowledge a possible problem. 
 
 https://github.com/RunxinXu/TSAR/blob/9806edfb5a7f90b9ae85ff06f435c20e4222be59/code/run.py#L443-L444
