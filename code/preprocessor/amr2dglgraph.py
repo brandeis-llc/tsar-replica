@@ -6,11 +6,16 @@ from tqdm import tqdm
 PB_VN_MAPPINGS = json.load(open("../code/preprocessor/pb-vn2.json"))
 PREDICATE = ""
 
+
+# Current Configuration: GL only, AMR all as default
 def get_amr_edge_idx(edge_type_str):
+
     # remove ?
     edge_type_str = edge_type_str.replace("?", "")
     if edge_type_str.startswith("ARG"):
         return 9
+
+
     # if the edge is in event-structure (came from VN)
     if (edge_type_str.upper() == edge_type_str) and (edge_type_str != "E") and (edge_type_str != ""):
         # if the predicate is not in verb net, return the default edge
@@ -21,7 +26,6 @@ def get_amr_edge_idx(edge_type_str):
 
         # some have no arguments
         pb_vns = [p for p in pb_vns if p]
-
 
         if len(pb_vns) == 0:
             return 9
@@ -37,25 +41,18 @@ def get_amr_edge_idx(edge_type_str):
             for idx in to_del:
                 del pb_vns[idx]
 
-            # slightly less simple case where the current edge node disambiguates the argument structure
-            if len(pb_vns) == 1:
-                pb_vn = pb_vns[0]
             # did not have a corresponding argument, return default edge
-            elif len(pb_vns) == 0:
+            if len(pb_vns) == 0:
                 return 9
+            # case where the current edge node disambiguates the argument structure
             else:
                 pb_vn = pb_vns[0]
-
-            # options:
-            # 1) give up and just go with the first one
-            # 2) check if previous nodes disambiguated it (dynamic programming)
-            # 1 is almost certainly the best way
-            # 2 is probably not necessary because most are disambiguated already
 
         vn_pb = {v: k for k, v in pb_vn.items()}
 
         edge_type_str = vn_pb[edge_type_str.lower()]
 
+    # GL edges
     if edge_type_str.startswith("subevent"):
         return 0
     elif edge_type_str.startswith("event-structure"):

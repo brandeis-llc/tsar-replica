@@ -1,4 +1,4 @@
-from code.preprocessor.amr_io import AMR
+from amr_io import AMR
 import torch
 
 
@@ -84,10 +84,8 @@ if __name__ == '__main__':
                                             :THEME t
                                             :DESTINATION (R / ROLE))
                                    :op3 (c3 / cause))))"""
-    for l in penman2jamr(penman_txt):
-        print(l)
-
-    print("hi")
+    # for l in penman2jamr(penman_txt):
+    #     print(l)
 
     for split in ["test", "dev", "train"]:
         with open("glamrs/{}.glamrs".format(split)) as f:
@@ -135,21 +133,14 @@ if __name__ == '__main__':
                         print("Failed: " + tag)
                         fails += 1
                         if tag != "":
-                            try:
-                                jamr_lines = amr_dict[tag].split("\n")
-                            except Exception:
-                                print("FUCK!!!")
-                                break
-                            else:
-                                print("AMR Saved!")
-                                saves += 1
+                            jamr_lines = amr_dict[tag].split("\n")
+                            print("AMR Saved!")
+                            saves += 1
                     jamr_and_graph = tag + "\n" + "\n".join(jamr_lines) + "\n" + "\n".join(sentence.split("\n")[1:])
 
                 f.write(jamr_and_graph+"\n\n\n")
                 all_info.append(jamr_and_graph)
         print("{} has {} fails and {} saves".format(split, fails, saves))
-        fails = 0
-        saves = 0
 
         torch.save(all_info, "amr-rams-{}.pkl".format(split))
 
